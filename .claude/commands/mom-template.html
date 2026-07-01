@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #1a1a2e;
+    background: #fff;
+    padding: 48px 56px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* Header banner */
+  .header {
+    background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+    color: #fff;
+    padding: 28px 32px;
+    border-radius: 10px;
+    margin-bottom: 32px;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 12px;
+  }
+  .header-meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .header-meta span {
+    font-size: 12px;
+    opacity: 0.85;
+  }
+  .header-meta strong { opacity: 1; font-weight: 600; }
+
+  /* Section headings */
+  h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #0f3460;
+    border-bottom: 2px solid #0f3460;
+    padding-bottom: 6px;
+    margin: 28px 0 14px;
+  }
+
+  h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #16213e;
+    margin: 18px 0 8px;
+  }
+
+  p { margin-bottom: 10px; }
+
+  /* Summary box */
+  .summary-box {
+    background: #f0f4ff;
+    border-left: 4px solid #0f3460;
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    color: #16213e;
+  }
+
+  /* Lists */
+  ul, ol {
+    padding-left: 20px;
+    margin-bottom: 10px;
+  }
+  li { margin-bottom: 5px; }
+  li strong { color: #0f3460; }
+
+  /* Attendees pills */
+  .attendees {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .pill {
+    background: #e8edf8;
+    color: #0f3460;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* Action items table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 12.5px;
+  }
+  th {
+    background: #0f3460;
+    color: #fff;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #e8edf8;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f7f9ff; }
+
+  /* Decisions */
+  .decision-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .decision-item:last-child { border-bottom: none; }
+  .decision-bullet {
+    width: 20px;
+    height: 20px;
+    background: #0f3460;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 11px;
+    color: #999;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Color highlights: <mark class="red">text</mark> etc. */
+  mark                { background: #fff176; color: inherit; border-radius: 2px; padding: 0 3px; }
+  mark.green          { background: #c8f7c5; }
+  mark.red            { background: #ffd5d5; }
+  mark.blue           { background: #d0e8ff; }
+  mark.orange         { background: #ffe5c0; }
+
+  /* Mermaid / inline SVG diagrams */
+  .mermaid-diagram {
+    margin: 16px 0;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+  .mermaid-diagram svg,
+  .mermaid-diagram img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+
+  /* Mermaid fallback (mmdc not installed) */
+  .mermaid-fallback {
+    background: #f8f8f8;
+    border: 1px dashed #ccc;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-family: monospace;
+    font-size: 11.5px;
+    color: #555;
+    margin: 12px 0;
+    white-space: pre-wrap;
+  }
+  .mermaid-fallback::before {
+    content: "⚠ Diagram (install mmdc to render): ";
+    display: block;
+    font-family: sans-serif;
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 6px;
+  }
+
+  /* Bilingual two-column layout */
+  .bilingual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid #e8edf8;
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+  .lang-col {
+    padding: 14px 18px;
+  }
+  .lang-col:first-child {
+    border-right: 1px solid #e8edf8;
+    background: #fafbff;
+  }
+  .lang-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #0f3460;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e0e8f8;
+  }
+
+  /* Language switcher (bilingual docs only) */
+  .lang-switcher {
+    position: fixed;
+    top: 16px;
+    right: 24px;
+    display: flex;
+    gap: 4px;
+    background: #fff;
+    border: 1px solid #dde3f0;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    z-index: 200;
+  }
+  .lang-switcher button {
+    padding: 5px 13px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: #0f3460;
+    cursor: pointer;
+    font-size: 11.5px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: background .15s, color .15s;
+  }
+  .lang-switcher button.active { background: #0f3460; color: #fff; }
+  .lang-switcher button:hover:not(.active) { background: #e8edf8; }
+
+  /* Single-language modes — strip the bilingual box, keep content intact */
+  body.show-vi .bilingual,
+  body.show-en .bilingual {
+    display: block;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    margin: 0;
+  }
+  body.show-vi .lang-col,
+  body.show-en .lang-col {
+    padding: 0;
+    background: transparent !important;
+    border: none !important;
+  }
+  body.show-vi .lang-col:last-child { display: none; }
+  body.show-en .lang-col:first-child { display: none; }
+  body.show-vi .lang-label,
+  body.show-en .lang-label { display: none; }
+
+  /* Print */
+  @media print {
+    body { padding: 0; }
+    .lang-switcher { display: none; }
+    .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    mark, mark.green, mark.red, mark.blue, mark.orange {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .mermaid-diagram { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+{{BODY}}
+<div class="footer">
+  <span>{{FOOTER_LABEL}}</span>
+  <span>{{DATE}}</span>
+</div>
+<script>
+(function () {
+  if (!document.querySelector('.bilingual')) return;
+  var bar = document.createElement('div');
+  bar.className = 'lang-switcher';
+  [['both','Song ngữ'],['vi','Tiếng Việt'],['en','English']].forEach(function(p) {
+    var btn = document.createElement('button');
+    btn.textContent = p[1];
+    btn.dataset.lang = p[0];
+    if (p[0] === 'both') btn.classList.add('active');
+    bar.appendChild(btn);
+  });
+  document.body.appendChild(bar);
+  bar.addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var lang = btn.dataset.lang;
+    document.body.classList.remove('show-vi', 'show-en');
+    if (lang !== 'both') document.body.classList.add('show-' + lang);
+    bar.querySelectorAll('button').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.lang === lang);
+    });
+  });
+})();
+</script>
+</body>
+</html>

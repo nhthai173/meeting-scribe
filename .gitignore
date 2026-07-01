@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.wav
+transcript_*.txt
+MOM/
+.DS_Store

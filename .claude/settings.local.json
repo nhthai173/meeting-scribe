@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(whisper *)",
+      "Bash(python3 *)",
+      "Bash(pip show *)",
+      "Bash(pkill -f \"whisper_mps\\\\|load_model_mps\\\\|benchmark\")"
+    ]
+  }
+}
