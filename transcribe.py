@@ -75,7 +75,7 @@ def _try_mlx(audio_input: str, extra_args: list) -> bool:
     from pathlib import Path
     out = Path(known.output_dir) / (Path(audio_input).stem + ".txt")
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(result["text"])
+    out.write_text(result["text"], encoding="utf-8")
     print(f"[whisper_acc] Saved: {out}", file=sys.stderr)
     return True
 
@@ -353,7 +353,7 @@ def _mic_realtime(input_device, extra_args: list):
 
     if transcript_lines:
         txt_path = Path(base + ".txt")
-        txt_path.write_text("\n".join(transcript_lines))
+        txt_path.write_text("\n".join(transcript_lines), encoding="utf-8")
         print(f"[mic] Transcript: {txt_path.resolve()}", file=sys.stderr)
 
     if record_buf:

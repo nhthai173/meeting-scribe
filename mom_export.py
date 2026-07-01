@@ -105,7 +105,7 @@ def md_to_html_body(md_text: str) -> str:
 
 
 def render(md_path: Path) -> tuple[Path, Path]:
-    md_text = _render_mermaid(md_path.read_text())
+    md_text = _render_mermaid(md_path.read_text(encoding="utf-8"))
     lang = _detect_lang(md_text)
     body = md_to_html_body(md_text)
 
@@ -116,14 +116,14 @@ def render(md_path: Path) -> tuple[Path, Path]:
         body, flags=re.DOTALL
     )
 
-    template = TEMPLATE.read_text()
+    template = TEMPLATE.read_text(encoding="utf-8")
     html = (template
             .replace("{{BODY}}", body)
             .replace("{{DATE}}", date.today().isoformat())
             .replace("{{FOOTER_LABEL}}", _FOOTER_LABELS[lang]))
 
     html_path = md_path.with_suffix(".html")
-    html_path.write_text(html)
+    html_path.write_text(html, encoding="utf-8")
 
     pdf_path = md_path.with_suffix(".pdf")
     from weasyprint import HTML
