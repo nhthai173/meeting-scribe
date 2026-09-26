@@ -6,8 +6,17 @@ Audio recording → transcript → Biên bản cuộc họp (MD + HTML + PDF).
 
 | Skill | Dùng khi |
 |-------|----------|
-| `/mom <audio>` | Tạo MoM từ file ghi âm (transcribe + viết + export) |
+| `/mom <audio\|video>` | Tạo MoM từ file ghi âm hoặc video họp (transcribe + đọc slide + viết + export) |
 | `/mom-export <file.md>` | Re-export HTML + PDF từ file `.md` đã có (sau khi sửa thủ công) |
+
+Chọn template bằng `--template <tên>` (dùng được cho cả hai skill):
+
+| Template | Phong cách |
+|----------|-----------|
+| `editorial` (mặc định) | Font không chân (Source Sans 3), căn đều hai lề, một màu nhấn, bảng kẻ mảnh |
+| `vn` | Thể thức văn bản hành chính VN (NĐ 30/2020): Times New Roman, mực đen, căn đều, mục I./1./-, bảng lưới đầy đủ |
+
+Template đã chọn được ghi vào cuối file `.md`, nên `/mom-export` về sau dùng lại đúng template đó.
 
 **Output** của `/mom` vào `MOM/<tên-file>/`:
 ```
@@ -129,4 +138,5 @@ python mom_export.py MOM/meeting/meeting.md
 | `mom_export.py` | Convert `.md` → `.html` + `.pdf` (có render Mermaid diagram) |
 | `.claude/commands/mom.md` | Skill `/mom` |
 | `.claude/commands/mom-export.md` | Skill `/mom-export` |
-| `.claude/commands/mom-template.html` | HTML/PDF template |
+| `.claude/commands/mom-template-editorial.html` | Template `editorial` |
+| `.claude/commands/mom-template-vn.html` | Template `vn` |

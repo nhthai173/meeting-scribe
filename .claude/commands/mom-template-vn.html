@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<style>
+  /* Vietnamese administrative-document style, after Nghị định 30/2020/NĐ-CP
+     (Phụ lục I), minus quốc hiệu/cơ quan/chữ ký blocks: Times New Roman, black ink only, 13pt body, justified with
+     first-line indent, left binding margin 30mm, page number top-centre from
+     page 2, sections I./1./a), "-" bullets. Only highlights carry colour. */
+  @import url('https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+  @page {
+    size: A4;
+    margin: 20mm 15mm 20mm 30mm;
+    @top-center { content: counter(page); font: 13pt 'Times New Roman', Tinos, serif; }
+  }
+  @page :first { @top-center { content: none; } }
+
+  /* WeasyPrint UA: ul/ol break-before:avoid chains with heading
+     break-after:avoid and pushes whole blocks to the next page. */
+  ul, ol { break-before: auto; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Times New Roman', Tinos, Times, serif;
+    font-size: 13pt;
+    line-height: 1.3;
+    color: #000;
+    background: #fff;
+    padding: 56px 56px 56px 96px;
+    max-width: 860px;
+    margin: 0 auto;
+    text-align: justify;
+    counter-reset: sec;
+  }
+
+  /* ── Tên loại + trích yếu + thông tin ────────────── */
+  .doc-header { text-align: center; margin-bottom: 18px; }
+  .doc-kicker { font-size: 14pt; font-weight: 700; text-transform: uppercase; }
+  .doc-header > h1:first-child { font-size: 14pt; text-transform: uppercase; }
+  .doc-header h1 { font-size: 13.5pt; font-weight: 700; line-height: 1.3; margin: 2px auto 0; max-width: 92%; }
+  .doc-header h1::after {
+    content: ""; display: block; width: 32%;
+    margin: 6px auto 16px; border-bottom: .75pt solid #000;
+  }
+  .doc-meta { display: grid; grid-template-columns: max-content 1fr; column-gap: 6px; text-align: left; }
+  .doc-meta dt { font-weight: 700; }
+  .doc-meta dt::after { content: ":"; }
+  .doc-meta dd { margin-bottom: 3px; }
+
+  /* ── Mục: I. MỤC LỚN / 1. mục nhỏ ────────────────── */
+  h2 { font-size: 13pt; font-weight: 700; text-transform: uppercase; text-align: left; margin: 16px 0 6px; }
+  h2 .num { font-size: 0; }
+  h2 .num::before { counter-increment: sec; content: counter(sec, upper-roman) ". "; font-size: 13pt; }
+  h3 { font-size: 13pt; font-weight: 700; text-align: left; margin: 10px 0 4px; }
+
+  p { margin-bottom: 6px; text-indent: 1cm; }
+  li p, td p, .doc-meta p { text-indent: 0; }
+  strong { font-weight: 700; }
+  code { font-family: 'Times New Roman', Tinos, serif; font-style: italic; }
+
+  /* ── Liệt kê: "-" rồi "+" ────────────────────────── */
+  ul, ol { margin: 0 0 6px 1cm; padding-left: 14px; }
+  ul { list-style: none; }
+  ul > li { position: relative; }
+  ul > li::before { content: "-"; position: absolute; left: -14px; }
+  ul ul > li::before { content: "+"; }
+  ol ol { list-style: lower-alpha; }
+  li { margin-bottom: 3px; }
+  li > ul, li > ol { margin: 3px 0 2px 0; }
+
+  /* ── Bảng: lưới đen mảnh, tiêu đề đậm căn giữa ───── */
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 12pt; text-align: left; }
+  th, td { border: .5pt solid #000; padding: 4px 6px; vertical-align: top; }
+  thead th { font-weight: 700; text-align: center; vertical-align: middle; }
+  tr { page-break-inside: avoid; }
+  table.numbered td:first-child, table.numbered th:first-child { width: 42px; text-align: center; }
+  td.tbd { font-style: italic; }
+
+  /* ── Highlights: nhạt, phủ hết chiều cao chữ ─────── */
+  mark {
+    color: inherit; padding: 0 1px;
+    background: #fbefb4;
+  }
+  mark.yellow { background: #fbefb4; }
+  mark.green  { background: #dcedd3; }
+  mark.red    { background: #f6d6cf; }
+  mark.blue   { background: #d9e5f2; }
+  mark.orange { background: #f9e0c4; }
+
+  /* ── Sơ đồ ───────────────────────────────────────── */
+  .mermaid-diagram { margin: 10px 0 12px; text-align: center; page-break-inside: avoid; }
+  .mermaid-diagram svg, .mermaid-diagram img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+  .mermaid-fallback {
+    border: .5pt dashed #000; padding: 8px 12px; margin: 10px 0;
+    font-family: Menlo, Consolas, monospace; font-size: 9.5pt; white-space: pre-wrap; text-align: left;
+  }
+  .mermaid-fallback::before { content: "Sơ đồ (cài mmdc để hiển thị):"; display: block; font: italic 12pt 'Times New Roman', Tinos, serif; margin-bottom: 4px; }
+
+  .footer { display: none; }
+
+  /* ── Song ngữ ────────────────────────────────────── */
+  .bilingual { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; margin: 6px 0 10px; }
+  .lang-col + .lang-col { border-left: .5pt solid #000; padding-left: 18px; }
+  .lang-label { font-weight: 700; font-style: italic; margin-bottom: 4px; }
+  .lang-switcher { position: fixed; top: 16px; right: 24px; display: flex; background: #fff; border: .75pt solid #000; z-index: 200; }
+  .lang-switcher button { padding: 4px 12px; border: none; background: transparent; cursor: pointer; font: 12pt 'Times New Roman', Tinos, serif; }
+  .lang-switcher button + button { border-left: .75pt solid #000; }
+  .lang-switcher button.active { background: #000; color: #fff; }
+  body.show-vi .bilingual, body.show-en .bilingual { display: block; margin: 0; }
+  body.show-vi .lang-col, body.show-en .lang-col { padding: 0; border: none; }
+  body.show-vi .lang-col:last-child, body.show-en .lang-col:first-child,
+  body.show-vi .lang-label, body.show-en .lang-label { display: none; }
+
+  @media print {
+    body { padding: 0; max-width: none; }
+    .lang-switcher { display: none; }
+    mark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+{{BODY}}
+<div class="footer">{{FOOTER_LABEL}} {{DATE}}</div>
+<script>
+(function () {
+  if (!document.querySelector('.bilingual')) return;
+  var bar = document.createElement('div');
+  bar.className = 'lang-switcher';
+  [['both','Song ngữ'],['vi','Tiếng Việt'],['en','English']].forEach(function(p) {
+    var btn = document.createElement('button');
+    btn.textContent = p[1];
+    btn.dataset.lang = p[0];
+    if (p[0] === 'both') btn.classList.add('active');
+    bar.appendChild(btn);
+  });
+  document.body.appendChild(bar);
+  bar.addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var lang = btn.dataset.lang;
+    document.body.classList.remove('show-vi', 'show-en');
+    if (lang !== 'both') document.body.classList.add('show-' + lang);
+    bar.querySelectorAll('button').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.lang === lang);
+    });
+  });
+})();
+</script>
+</body>
+</html>

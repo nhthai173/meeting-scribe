@@ -1,6 +1,14 @@
-Convert an audio recording or transcription file into a Minutes of Meeting document.
+Convert an audio/video recording or transcription file into a Minutes of Meeting document.
 
-The input file path is: $ARGUMENTS
+The input is: $ARGUMENTS
+
+It may carry a template choice — `--template <name>` / `-t <name>`, or plain words like
+"mẫu vn", "template hành chính". Strip that from the file path. Templates:
+- `editorial` (default) — sans-serif (Source Sans 3), justified, one accent colour, hairline tables
+- `vn` — Vietnamese administrative style (NĐ 30/2020): Times New Roman, black ink, justified,
+  I./1./- numbering, full-grid tables. No quốc hiệu / signature block.
+
+No template mentioned → `editorial`, don't ask. Below, `$ARGUMENTS` means the file path only.
 
 ## Steps
 
@@ -9,14 +17,55 @@ The input file path is: $ARGUMENTS
 
 Detect input type from the file extension:
 - `.txt` → already a transcription, skip to step 2
+- `.mov` `.mp4` `.mkv` `.webm` `.avi` `.m4v` → video, start from step 0
 - anything else → treat as audio, start from step 1
+
+0. Video only — extract audio + slide keyframes:
+
+   ```
+   VIDEO="$ARGUMENTS"
+   SCRATCH=$(mktemp -d)
+   ffprobe -v error -show_entries format=duration:stream=codec_type,codec_name -of compact "$VIDEO"
+   ffmpeg -nostdin -loglevel error -y -i "$VIDEO" -vn -c:a copy "$SCRATCH/audio.m4a" \
+     || ffmpeg -nostdin -loglevel error -y -i "$VIDEO" -vn -c:a aac "$SCRATCH/audio.m4a"
+   ```
+   No audio stream → stop and tell the user. Continue step 1 with `AUDIO="$SCRATCH/audio.m4a"`
+   (start the transcription in the background — it's the slow part — and do the keyframes meanwhile).
+   Append `> "$SCRATCH/whisper.log" 2>&1` to the transcribe command: the `.txt` has no timestamps,
+   but the log has `[MM:SS --> MM:SS]` per line — read the log to line speech up with the sheets.
+   Whisper loops on long recordings (same line repeated, `à à à…`) — skip those runs when reading.
+
+   Keyframes as timestamped 3×3 contact sheets (scene change only, keyframe-decode only → ~20 s for 1.5 h):
+   ```
+   mkdir -p "$SCRATCH/sheets"
+   ffmpeg -nostdin -loglevel error -y -skip_frame nokey -i "$VIDEO" \
+     -vf "select='gt(scene,0.1)',scale=640:-2,drawtext=text='%{pts\:hms}':x=8:y=8:fontsize=28:fontcolor=yellow:box=1:boxcolor=black,tile=3x3" \
+     -fps_mode vfr "$SCRATCH/sheets/sheet_%02d.jpg"
+   ```
+   If `drawtext` fails (ffmpeg built without freetype), drop that filter — sheet order is still chronological.
+   Too many sheets (>40) → raise the threshold to `0.2`; too few (static talking heads) → lower to `0.05`.
+
+   **Read every sheet** (Read tool shows images). Screen content is often the most reliable source:
+   - **Slides / shared docs** → exact spelling of product names, part numbers, prices, quantities,
+     figures. When slide text and transcript disagree, trust the slide.
+   - **Agenda / section divider slides** → use as the MoM topic skeleton.
+   - **Meeting-app name tags** (Teams/Zoom/Meet participant grid) → attendee names. These beat
+     transcript guesses; still ask the user for roles/companies if unclear.
+   - Timestamps on sheets ↔ transcript time markers → anchor what was *said* about each slide.
+   - Need detail (small text, a table, a name tag)? Grab one full-res frame and crop it:
+     `ffmpeg -nostdin -loglevel error -y -ss <seconds> -i "$VIDEO" -frames:v 1 -vf "crop=W:H:X:Y" "$SCRATCH/zoom.png"`
+   - **Ignore unrelated screen content** — notifications, inbox, chat pop-ups, other apps. Never
+     copy personal/unrelated info (emails, other meetings, links, passcodes) into the MoM.
+
+   The slides show what was *presented*; the MoM must still be built from what was *discussed*
+   (questions, objections, decisions, commitments). Don't turn the MoM into a slide summary.
 
 1. Prepare and transcribe audio:
 
    Use a temp dir first — final location is decided after reading content.
    ```
-   AUDIO="$ARGUMENTS"
-   SCRATCH=$(mktemp -d)
+   AUDIO="${AUDIO:-$ARGUMENTS}"
+   SCRATCH=${SCRATCH:-$(mktemp -d)}
    MEAN_VOL=$(ffmpeg -i "$AUDIO" -filter:a volumedetect -f null /dev/null 2>&1 | grep mean_volume | awk '{print $5}')
    ```
    If `$MEAN_VOL` is below `-20` dB, normalize:
@@ -87,6 +136,14 @@ Detect input type from the file extension:
    mv "$SCRATCH/<audio_basename>.txt" "$OUTDIR/$SLUG.txt"
    rm -rf "$SCRATCH"
    ```
+   For video input, **don't copy the video** (hundreds of MB) — replace the `cp` above with:
+   ```
+   mv "$SCRATCH/audio.m4a" "$OUTDIR/$SLUG.m4a"
+   mv "$SCRATCH/sheets" "$OUTDIR/tmp/sheets"
+   mv "$SCRATCH/whisper.log" "$OUTDIR/tmp/"
+   ```
+   then move the transcript and clean scratch as for audio. Put the original video's full path
+   in the MoM's `**File gốc:**` line.
    `BASENAME` = SLUG
 
    Tmp/intermediate files (normalized audio, etc.) go in `$OUTDIR/tmp/`.
@@ -95,7 +152,7 @@ Detect input type from the file extension:
 
 6. Export HTML and PDF:
    ```
-   python <project_root>/mom_export.py "$OUTDIR/$BASENAME.md"
+   python <project_root>/mom_export.py "$OUTDIR/$BASENAME.md" --template <name>
    ```
 
 7. Print all three output paths (`.md`, `.html`, `.pdf`).
@@ -113,8 +170,9 @@ force content into a generic outline. Use `##` for each major topic, `###` for s
 
 ```markdown
 # Biên bản cuộc họp
-**Ngày:** <date — extract from filename or use today>
-**File gốc:** <audio/transcript filename>
+**Ngày:** <date — extract from filename or use today>  
+**File gốc:** <audio/transcript filename>  
+**Chủ đề:** <one-line subject, ≤ 12 words — rendered as the big document title>
 
 ## Tóm tắt
 <2–3 sentences that cover every major area discussed, not just the technical parts>
@@ -137,6 +195,10 @@ force content into a generic outline. Use `##` for each major topic, `###` for s
 
 Every action item must have an owner and a deadline — write "Chưa xác định" if missing,
 never omit the row.
+
+Markdown gotchas (the exporter is python-markdown): consecutive `**Label:**` header lines need two
+trailing spaces or they merge into one line; nested list items need a **4-space** indent or they
+get flattened.
 
 ### Highlights
 

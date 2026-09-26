@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400&display=swap');
+
+  :root {
+    --ink:    #1d1f21;
+    --muted:  #6b6760;
+    --rule:   #d9d4ca;
+    --hair:   #ebe7df;
+    --accent: #9b3d23;   /* the only brand-ish colour: kicker, labels */
+    --paper:  #ffffff;
+  }
+
+  /* WeasyPrint's default @page margin is 75px (~2cm) on every side; two
+     stacked page margins at a break can look like a large blank gap. */
+  @page {
+    size: A4;
+    margin: 1.6cm 1.8cm 1.8cm;
+    @bottom-left {
+      content: "{{FOOTER_LABEL}}";
+      font: 8pt 'Source Sans 3', sans-serif; color: #6b6760;
+    }
+    @bottom-right {
+      content: counter(page) " / " counter(pages);
+      font: 8pt 'Source Sans 3', sans-serif; color: #6b6760;
+    }
+  }
+
+  /* WeasyPrint's UA stylesheet sets h1-h6 { break-after: avoid } and
+     ul, ol { break-before: avoid }. Chained together (heading -> intro
+     paragraph -> list), this forces the whole group to the next page as
+     one unbreakable unit, leaving a large blank gap at the bottom of the
+     previous page. Loosen the list rule so only the heading stays glued
+     to its very next line, not the entire following list. */
+  ul, ol { break-before: auto; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--paper);
+    padding: 56px 64px;
+    max-width: 860px;
+    margin: 0 auto;
+    font-variant-numeric: tabular-nums;
+    text-align: justify;
+  }
+  h1, h2, h3, th, td, .doc-meta { text-align: left; }
+
+  /* ── Document header ─────────────────────────────── */
+  .doc-header { margin-bottom: 26px; }
+  .doc-kicker {
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-size: 20pt;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -.01em;
+    padding-bottom: 14px;
+    border-bottom: 2.5pt solid var(--ink);
+  }
+  .doc-meta {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    border-bottom: .6pt solid var(--ink);
+  }
+  .doc-meta dt, .doc-meta dd {
+    padding: 6px 0;
+    border-bottom: .5pt solid var(--hair);
+  }
+  .doc-meta dt {
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: var(--muted);
+    padding-top: 7.5px;
+  }
+  .doc-meta dt:nth-last-of-type(1), .doc-meta dd:last-child { border-bottom: none; }
+
+  /* ── Headings ────────────────────────────────────── */
+  h2 {
+    font-size: 14pt;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 30px 0 10px;
+  }
+  h2 .num {
+    display: inline-block;
+    min-width: 1.6em;
+  }
+  h3 {
+    font-size: 10.5pt;
+    font-weight: 700;
+    margin: 16px 0 6px;
+  }
+
+  p { margin-bottom: 8px; }
+  strong { font-weight: 700; }
+  code {
+    font-family: 'IBM Plex Mono', Menlo, monospace;
+    font-size: 8.8pt;
+    color: var(--muted);
+  }
+
+  /* Summary = lead paragraph, not a coloured box */
+  .summary-box p {
+    font-size: 11pt;
+    line-height: 1.6;
+  }
+
+  /* ── Lists ───────────────────────────────────────── */
+  ul, ol { margin: 0 0 8px 0; padding-left: 18px; }
+  ul { list-style: none; }
+  ul > li { position: relative; }
+  ul > li::before {
+    content: "–";
+    position: absolute;
+    left: -14px;
+    color: var(--muted);
+  }
+  ul ul > li::before { content: "·"; left: -11px; font-weight: 700; }
+  ol > li::marker { color: var(--muted); }
+  li { margin-bottom: 3px; }
+  li > ul, li > ol { margin: 3px 0 2px; }
+
+  /* ── Tables: print-report rules, no fills ────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 14px;
+    font-size: 9.8pt;
+    border-top: 1.2pt solid var(--ink);
+    border-bottom: 1.2pt solid var(--ink);
+  }
+  thead th {
+    text-align: left;
+    font-weight: 700;
+    font-size: 8.8pt;
+    color: var(--ink);
+    padding: 6px 10px 5px 0;
+    white-space: nowrap;
+    border-bottom: .6pt solid var(--ink);
+  }
+  td {
+    padding: 6px 10px 6px 0;
+    border-bottom: .5pt solid var(--hair);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr { page-break-inside: avoid; }
+  table.numbered td:first-child,
+  table.numbered th:first-child {
+    width: 34px;
+    color: var(--muted);
+  }
+  td.tbd { color: var(--muted); font-style: italic; }
+
+  /* ── Highlights: full-height marker tint ─────────
+     A plain background covers the inline content box (ascender to
+     descender), so the whole glyph sits on the tint, not just its foot. */
+  mark {
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 2px;
+    background: #f6e3a4;
+  }
+  mark.yellow { background: #f6e3a4; }
+  mark.green  { background: #cfe8d2; }
+  mark.red    { background: #f5cdc4; }
+  mark.blue   { background: #d3e1f1; }
+  mark.orange { background: #f7dab8; }
+
+  /* ── Diagrams ────────────────────────────────────── */
+  .mermaid-diagram {
+    margin: 14px 0 16px;
+    padding: 12px 0;
+    border-top: .5pt solid var(--hair);
+    border-bottom: .5pt solid var(--hair);
+    text-align: center;
+    page-break-inside: avoid;
+  }
+  .mermaid-diagram svg,
+  .mermaid-diagram img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+
+  .mermaid-fallback {
+    border: .6pt dashed var(--rule);
+    padding: 10px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8.5pt;
+    color: var(--muted);
+    margin: 12px 0;
+    white-space: pre-wrap;
+  }
+  .mermaid-fallback::before {
+    content: "Diagram (install mmdc to render):";
+    display: block;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 8pt;
+    margin-bottom: 6px;
+  }
+
+  /* Screen footer (PDF uses @page boxes instead) */
+  .footer {
+    margin-top: 40px;
+    padding-top: 10px;
+    border-top: .6pt solid var(--ink);
+    font-size: 8.5pt;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── Bilingual two-column layout ─────────────────── */
+  .bilingual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 22px;
+    margin: 8px 0 12px;
+  }
+  .lang-col + .lang-col {
+    border-left: .5pt solid var(--rule);
+    padding-left: 22px;
+  }
+  .lang-label {
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  /* Language switcher (bilingual docs only, screen) */
+  .lang-switcher {
+    position: fixed;
+    top: 16px;
+    right: 24px;
+    display: flex;
+    background: var(--paper);
+    border: .8pt solid var(--ink);
+    z-index: 200;
+  }
+  .lang-switcher button {
+    padding: 5px 12px;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    font: 600 9pt 'Source Sans 3', sans-serif;
+  }
+  .lang-switcher button + button { border-left: .8pt solid var(--ink); }
+  .lang-switcher button.active { background: var(--ink); color: var(--paper); }
+
+  body.show-vi .bilingual,
+  body.show-en .bilingual { display: block; margin: 0; }
+  body.show-vi .lang-col,
+  body.show-en .lang-col { padding: 0; border: none; }
+  body.show-vi .lang-col:last-child { display: none; }
+  body.show-en .lang-col:first-child { display: none; }
+  body.show-vi .lang-label,
+  body.show-en .lang-label { display: none; }
+
+  /* ── Print ───────────────────────────────────────── */
+  @media print {
+    body { padding: 0; max-width: none; }
+    .lang-switcher, .footer { display: none; }
+    mark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+{{BODY}}
+<div class="footer">
+  <span>{{FOOTER_LABEL}}</span>
+  <span>{{DATE}}</span>
+</div>
+<script>
+(function () {
+  if (!document.querySelector('.bilingual')) return;
+  var bar = document.createElement('div');
+  bar.className = 'lang-switcher';
+  [['both','Song ngữ'],['vi','Tiếng Việt'],['en','English']].forEach(function(p) {
+    var btn = document.createElement('button');
+    btn.textContent = p[1];
+    btn.dataset.lang = p[0];
+    if (p[0] === 'both') btn.classList.add('active');
+    bar.appendChild(btn);
+  });
+  document.body.appendChild(bar);
+  bar.addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var lang = btn.dataset.lang;
+    document.body.classList.remove('show-vi', 'show-en');
+    if (lang !== 'both') document.body.classList.add('show-' + lang);
+    bar.querySelectorAll('button').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.lang === lang);
+    });
+  });
+})();
+</script>
+</body>
+</html>

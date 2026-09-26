@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Convert a MoM .md file to HTML and PDF using the mom-template.html."""
-import sys
+"""Convert a MoM .md file to HTML and PDF using a mom-template-<name>.html."""
+import argparse
 import re
 import subprocess
 import tempfile
@@ -10,7 +10,24 @@ from datetime import date
 import markdown
 
 
-TEMPLATE = Path(__file__).parent / ".claude/commands/mom-template.html"
+TEMPLATE_DIR = Path(__file__).parent / ".claude/commands"
+TEMPLATES = sorted(p.stem.removeprefix("mom-template-") for p in TEMPLATE_DIR.glob("mom-template-*.html"))
+DEFAULT_TEMPLATE = "editorial"
+# The chosen template is recorded in the .md so re-exports keep the same look.
+_TEMPLATE_TAG = re.compile(r'<!--\s*mom-template:\s*([\w-]+)\s*-->')
+
+
+def _pick_template(md_path: Path, override: str | None) -> str:
+    md_text = md_path.read_text(encoding="utf-8")
+    m = _TEMPLATE_TAG.search(md_text)
+    name = override or (m.group(1) if m else DEFAULT_TEMPLATE)
+    if name not in TEMPLATES:
+        raise SystemExit(f"Unknown template '{name}'. Available: {', '.join(TEMPLATES)}")
+    if override and (not m or m.group(1) != name):
+        tag = f"<!-- mom-template: {name} -->"
+        md_text = _TEMPLATE_TAG.sub(tag, md_text) if m else md_text.rstrip("\n") + f"\n\n{tag}\n"
+        md_path.write_text(md_text, encoding="utf-8")
+    return name
 
 
 def _render_mermaid(md_text: str) -> str:
@@ -27,7 +44,7 @@ def _render_mermaid(md_text: str) -> str:
                 mmd = Path(f.name)
             png_path = mmd.with_suffix('.png')
             r = subprocess.run(
-                ['mmdc', '-i', str(mmd), '-o', str(png_path), '-b', 'white', '-s', '2'],
+                ['mmdc', '-i', str(mmd), '-o', str(png_path), '-b', 'white', '-s', '2', '-t', 'neutral'],
                 capture_output=True, timeout=30
             )
             if r.returncode == 0 and png_path.exists():
@@ -44,8 +61,10 @@ def _render_mermaid(md_text: str) -> str:
 
 
 def _detect_lang(md_text: str) -> str:
-    has_vi = bool(re.search(r'Biên bản|Tóm tắt|Người tham dự|Quyết định|Hành động tiếp theo', md_text))
-    has_en = bool(re.search(r'Minutes of Meeting|Summary|Attendees|Decisions|Action Items', md_text))
+    # headings only — body text often contains English words like "Summary"
+    heads = '\n'.join(re.findall(r'^#{1,3} .*$', md_text, re.M))
+    has_vi = bool(re.search(r'Biên bản|Tóm tắt|Người tham dự|Quyết định|Hành động tiếp theo', heads))
+    has_en = bool(re.search(r'Minutes of Meeting|Summary|Attendees|Decisions|Action Items', heads))
     if has_vi and has_en:
         return 'bilingual'
     if has_en:
@@ -104,19 +123,54 @@ def md_to_html_body(md_text: str) -> str:
     return markdown.markdown(md_text, extensions=["tables", "fenced_code"])
 
 
-def render(md_path: Path) -> tuple[Path, Path]:
-    md_text = _render_mermaid(md_path.read_text(encoding="utf-8"))
-    lang = _detect_lang(md_text)
-    body = md_to_html_body(md_text)
+_SUBJECT_LABELS = ('Chủ đề', 'Subject', 'Chủ đề / Subject')
 
-    # Style summary section (Vietnamese or English heading)
+
+def _build_header(body: str) -> str:
+    """<h1> + first '**Label:** value' paragraph -> kicker/title + metadata grid.
+    A 'Chủ đề'/'Subject' row, if present, becomes the big title and the h1 the kicker."""
+    m = re.match(r'\s*<h1>(.*?)</h1>\s*<p>(<strong>.*?)</p>', body, re.DOTALL)
+    if not m:
+        return body
+    h1, meta = m.groups()
+    rows = []
+    # split on each bold label, so it works with or without markdown hard line breaks
+    for line in re.split(r'<br\s*/?>|(?=<strong>)', meta):
+        r = re.match(r'\s*<strong>(.*?):?</strong>:?\s*(.*)', line.strip(), re.DOTALL)
+        if r:
+            rows.append((r.group(1).rstrip(':'), r.group(2).strip()))
+    subject = next((v for k, v in rows if k in _SUBJECT_LABELS), None)
+    rows = [(k, v) for k, v in rows if k not in _SUBJECT_LABELS]
+    title = (f'<div class="doc-kicker">{h1}</div><h1>{subject}</h1>' if subject
+             else f'<h1>{h1}</h1>')
+    dl = ''.join(f'<dt>{k}</dt><dd>{v}</dd>' for k, v in rows)
+    return f'<header class="doc-header">{title}<dl class="doc-meta">{dl}</dl></header>' + body[m.end():]
+
+
+def _decorate(body: str) -> str:
+    body = _build_header(body)
+    # Summary section (Vietnamese or English heading) -> lead paragraph
     body = re.sub(
         r'(<h2>[^<]*(Tóm tắt|Summary)[^<]*</h2>)\s*(<p>.*?</p>)',
         r'\1<div class="summary-box">\3</div>',
         body, flags=re.DOTALL
     )
+    # "## 3. Title" -> accent-coloured section number
+    body = re.sub(r'<h2>(\d+)\.\s*', r'<h2><span class="num">\1</span>', body)
+    # Tables whose first column is a row counter (STT / # / No)
+    body = re.sub(r'<table>(\s*<thead>\s*<tr>\s*<th[^>]*>\s*(STT|#|No\.?)\s*</th>)',
+                  r'<table class="numbered">\1', body)
+    body = re.sub(r'<td>(Chưa xác định|TBD|Not specified)</td>', r'<td class="tbd">\1</td>', body)
+    return body
 
-    template = TEMPLATE.read_text(encoding="utf-8")
+
+def render(md_path: Path, template: str | None = None) -> tuple[Path, Path]:
+    template_name = _pick_template(md_path, template)
+    md_text = _render_mermaid(md_path.read_text(encoding="utf-8"))
+    lang = _detect_lang(md_text)
+    body = _decorate(md_to_html_body(md_text))
+
+    template = (TEMPLATE_DIR / f"mom-template-{template_name}.html").read_text(encoding="utf-8")
     html = (template
             .replace("{{BODY}}", body)
             .replace("{{DATE}}", date.today().isoformat())
@@ -133,10 +187,11 @@ def render(md_path: Path) -> tuple[Path, Path]:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python mom_export.py <file.md>")
-        sys.exit(1)
-    md = Path(sys.argv[1])
-    html_out, pdf_out = render(md)
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("md", type=Path)
+    ap.add_argument("-t", "--template", choices=TEMPLATES,
+                    help=f"default: the one recorded in the .md, else '{DEFAULT_TEMPLATE}'")
+    args = ap.parse_args()
+    html_out, pdf_out = render(args.md, args.template)
     print(f"HTML: {html_out}")
     print(f"PDF:  {pdf_out}")
